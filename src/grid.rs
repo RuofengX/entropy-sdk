@@ -143,10 +143,6 @@ impl NodeData {
         self.0.len()
     }
 
-    pub fn to_kelvin(self) -> Vec<u8> {
-        self.0.iter().map(|c| c.abslute()).collect()
-    }
-
     pub fn hotest(&self) -> (usize, Cell) {
         let (mut i_max, mut c_max) = (0, self.0[0]);
         self.0.iter().enumerate().for_each(|(i, c)| {
