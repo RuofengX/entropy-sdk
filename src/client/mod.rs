@@ -19,11 +19,23 @@ pub trait PhantomRead {
 #[async_trait]
 pub trait Access: Sized {
     fn from_url(server: String) -> Result<Self>;
-    async fn server_ping(&self) -> Result<()>;
+    async fn ping(&self) -> Result<()>;
     async fn player_info(&self, id: i32) -> Result<PlayerInfo>;
-    async fn player_register(&self, name: String, password: String) -> Result<Player>;
-    async fn player_verify(&self, name: String, password: String) -> Result<Player>;
-    async fn play(&self, name: String, password: String) -> Result<impl Play>;
+    async fn player_register<T: AsRef<str> + Sync + Send>(
+        &self,
+        name: T,
+        password: T,
+    ) -> Result<Player>;
+    async fn player_verify<T: AsRef<str> + Sync + Send>(
+        &self,
+        id: i32,
+        password: T,
+    ) -> Result<Player>;
+    async fn play<T: AsRef<str> + Sync + Send>(
+        &self,
+        id: i32,
+        password: T,
+    ) -> Result<impl Play>;
 }
 
 #[async_trait]

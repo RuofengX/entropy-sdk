@@ -18,6 +18,11 @@ impl RequestBuilder {
     fn auth(self, player: &Player) -> Self {
         RequestBuilder(self.0.basic_auth(player.id, Some(player.password.clone())))
     }
+
+    fn auth_by_params(self, id: i32, password: impl AsRef<str>) -> Self {
+        RequestBuilder(self.0.basic_auth(id, Some(password.as_ref())))
+    }
+
     async fn send(self) -> Result<Response> {
         Ok(self.0.send().await?)
     }
@@ -72,7 +77,7 @@ impl Access for Connection {
         Ok(Connection::new(server))
     }
 
-    async fn server_ping(&self) -> Result<()> {
+    async fn ping(&self) -> Result<()> {
         let resp = self.build_get("/")?.send().await?;
         if resp.status() != StatusCode::OK {
             bail!("ping fail")
@@ -89,13 +94,17 @@ impl Access for Connection {
         Ok(p)
     }
 
-    async fn player_register(&self, name: String, password: String) -> Result<Player> {
+    async fn player_register<T: Send + Sync + AsRef<str>>(
+        &self,
+        name: T,
+        password: T,
+    ) -> Result<Player> {
         let resp = self
             .build_post(
                 "/player/register",
                 json!({
-                    "name": name,
-                    "password": password
+                    "name": name.as_ref().to_string(),
+                    "password": password.as_ref().to_string()
                 }),
             )?
             .send()
@@ -108,15 +117,14 @@ impl Access for Connection {
         Ok(p)
     }
 
-    async fn player_verify(&self, name: String, password: String) -> Result<Player> {
+    async fn player_verify<T: AsRef<str> + Sync + Send>(
+        &self,
+        id: i32,
+        password: T,
+    ) -> Result<Player> {
         let resp = self
-            .build_post(
-                "/player/veirfy",
-                json!({
-                    "name": name,
-                    "password": password
-                }),
-            )?
+            .build_get("/player/verify")?
+            .auth_by_params(id, password)
             .send()
             .await?;
 
@@ -127,8 +135,12 @@ impl Access for Connection {
         Ok(p)
     }
 
-    async fn play(&self, name: String, password: String) -> Result<PlayerControl> {
-        let player = self.player_verify(name, password).await?;
+    async fn play<T: AsRef<str> + Sync + Send>(
+        &self,
+        id: i32,
+        password: T,
+    ) -> Result<PlayerControl> {
+        let player = self.player_verify(id, password).await?;
         Ok(PlayerControl {
             conn: self.clone(),
             player,
