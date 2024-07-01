@@ -129,11 +129,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "entropy-base"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d086f7a423f5f10b77ac077ba064874ba6cc71f620d6b5ac9555e917f2714cba"
+dependencies = [
+ "rand",
+ "serde",
+]
+
+[[package]]
 name = "entropy-sdk"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "entropy-base",
  "ordered-float",
  "reqwest",
  "serde",
