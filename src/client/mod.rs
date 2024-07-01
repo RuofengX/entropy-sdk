@@ -5,8 +5,10 @@ use std::ops::Deref;
 use anyhow::Result;
 use async_trait::async_trait;
 
-use crate::entity::{Guest, GuestInfo, Player, PlayerInfo};
-use entropy_base::grid::{navi, NodeData};
+use entropy_base::{
+    entity::{Guest, GuestInfo, Player, PlayerInfo},
+    grid::{navi, NodeData},
+};
 
 /// 可能被远程或其他客户端改变
 #[async_trait]

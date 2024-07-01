@@ -6,8 +6,10 @@ use reqwest::{header::USER_AGENT, Response, StatusCode, Url};
 use serde::Serialize;
 use serde_json::json;
 
-use crate::entity::{Guest, GuestInfo, Player, PlayerInfo};
-use entropy_base::grid::navi;
+use entropy_base::{
+    entity::{Guest, GuestInfo, Player, PlayerInfo},
+    grid::navi,
+};
 
 use super::{Access, PhantomRead, Play, Visit};
 
