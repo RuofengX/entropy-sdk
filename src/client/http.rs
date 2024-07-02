@@ -1,17 +1,19 @@
-use std::ops::Deref;
+use std::{collections::HashMap, ops::Deref, sync::Arc};
 
 use anyhow::{bail, Ok, Result};
 use async_trait::async_trait;
+use futures::stream::{FuturesUnordered, StreamExt};
 use reqwest::{header::USER_AGENT, Response, StatusCode, Url};
 use serde::Serialize;
 use serde_json::json;
 
 use entropy_base::{
     entity::{Guest, GuestInfo, Player, PlayerInfo},
-    grid::navi,
+    grid::{navi, Node, NodeData, NodeID},
 };
+use tokio::sync::{Mutex, RwLock};
 
-use super::{Access, PhantomRead, Play, Visit};
+use super::{Access, CachedGuide, Guide, PhantomRead, Play, Visit};
 
 pub struct RequestBuilder(reqwest::RequestBuilder);
 impl RequestBuilder {
@@ -144,6 +146,12 @@ impl Access for Connection {
         Ok(PlayerControl {
             conn: self.clone(),
             player,
+        })
+    }
+
+    async fn guide(&self) -> Result<Map> {
+        Ok(Map {
+            conn: self.clone(),
         })
     }
 }
@@ -327,5 +335,33 @@ impl<'g> Visit<'g> for GuestControl<'g> {
         let g = resp.json::<Guest>().await?;
         self.guest = g;
         Ok(())
+    }
+}
+
+pub struct Map {
+    conn: Connection,
+}
+
+#[async_trait]
+impl Guide for Map {
+    async fn get_node(&self, id: NodeID) -> Result<Node> {
+        let resp = self
+            .conn
+            .build_get(format!("/node/bytes/{0}/{1}", id.0, id.1))?
+            .send()
+            .await?;
+        Ok(Node {
+            id,
+            data: NodeData::from_bytes(resp.bytes().await?),
+        })
+    }
+    async fn list_nodes(&self, ids: impl Iterator<Item = NodeID> + Sync + Send) -> Result<Vec<Node>> {
+        let mut nodes = FuturesUnordered::new();
+        ids.for_each(|id| nodes.push(self.get_node(id)));
+        let mut result = vec![];
+        while let Some(node) = nodes.next().await {
+            result.push(node?);
+        }
+        Ok(result)
     }
 }

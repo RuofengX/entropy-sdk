@@ -804,10 +804,11 @@ dependencies = [
 
 [[package]]
 name = "entropy-base"
-version = "0.2.1"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51db46ce06f680b467d7eed94a069513e32fd9600655bdc63c65c3d8433023b6"
+checksum = "d6c7869e67a7e89681ccb0963f33d7f72b56e7162c4d3eb02494def396386a7e"
 dependencies = [
+ "bytes",
  "rand",
  "serde",
 ]
@@ -847,6 +848,7 @@ dependencies = [
  "async-trait",
  "entropy-base",
  "entropy-game",
+ "futures",
  "ordered-float 4.2.1",
  "reqwest 0.12.5",
  "serde",

@@ -7,8 +7,9 @@ use async_trait::async_trait;
 
 use entropy_base::{
     entity::{Guest, GuestInfo, Player, PlayerInfo},
-    grid::{navi, NodeData},
+    grid::{navi, Node, NodeData, NodeID},
 };
+use futures::stream::FuturesUnordered;
 
 /// 可能被远程或其他客户端改变
 #[async_trait]
@@ -31,11 +32,8 @@ pub trait Access: Sized {
         id: i32,
         password: T,
     ) -> Result<Player>;
-    async fn play<T: AsRef<str> + Sync + Send>(
-        &self,
-        id: i32,
-        password: T,
-    ) -> Result<impl Play>;
+    async fn play<T: AsRef<str> + Sync + Send>(&self, id: i32, password: T) -> Result<impl Play>;
+    async fn guide(&self) -> Result<impl Guide>;
 }
 
 #[async_trait]
@@ -55,7 +53,21 @@ pub trait Visit<'g>: Deref<Target = Guest> + PhantomRead + Sized {
 }
 
 #[async_trait]
-pub trait Navigate {
-    fn from_access(account: Player) -> Self;
-    async fn node(&self, x: i16, y: i16) -> NodeData;
+pub trait Guide {
+    async fn get_node(&self, id: NodeID) -> Result<Node>;
+    async fn list_nodes(
+        &self,
+        ids: impl Iterator<Item = NodeID> + Sync + Send,
+    ) -> Result<Vec<Node>>;
+}
+
+#[async_trait]
+pub trait CachedGuide {
+    async fn get_node_cached(&self, id: NodeID) -> Result<Node>;
+    async fn list_nodes_cached(
+        &self,
+        ids: impl Iterator<Item = NodeID>,
+    ) -> Result<Vec<Node>>;
+    fn truncate_cache(&self);
+    fn outdate_cache(&self, id:NodeID);
 }
