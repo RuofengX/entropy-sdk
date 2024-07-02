@@ -54,20 +54,17 @@ pub trait Visit<'g>: Deref<Target = Guest> + PhantomRead + Sized {
 
 #[async_trait]
 pub trait Guide {
-    async fn get_node(&self, id: NodeID) -> Result<Node>;
+    async fn get_node(&self, (x, y): (i16, i16)) -> Result<Node>;
     async fn list_nodes(
         &self,
-        ids: impl Iterator<Item = NodeID> + Sync + Send,
+        ids: impl Iterator<Item = (i16, i16)> + Sync + Send,
     ) -> Result<Vec<Node>>;
 }
 
 #[async_trait]
 pub trait CachedGuide {
     async fn get_node_cached(&self, id: NodeID) -> Result<Node>;
-    async fn list_nodes_cached(
-        &self,
-        ids: impl Iterator<Item = NodeID>,
-    ) -> Result<Vec<Node>>;
+    async fn list_nodes_cached(&self, ids: impl Iterator<Item = NodeID>) -> Result<Vec<Node>>;
     fn truncate_cache(&self);
-    fn outdate_cache(&self, id:NodeID);
+    fn outdate_cache(&self, id: NodeID);
 }

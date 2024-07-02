@@ -1,19 +1,17 @@
-use std::{collections::HashMap, ops::Deref, sync::Arc};
+use std::ops::Deref;
 
 use anyhow::{bail, Ok, Result};
 use async_trait::async_trait;
+use entropy_base::{
+    entity::{Guest, GuestInfo, Player, PlayerInfo},
+    grid::{navi, Node},
+};
 use futures::stream::{FuturesUnordered, StreamExt};
 use reqwest::{header::USER_AGENT, Response, StatusCode, Url};
 use serde::Serialize;
 use serde_json::json;
 
-use entropy_base::{
-    entity::{Guest, GuestInfo, Player, PlayerInfo},
-    grid::{navi, Node, NodeData, NodeID},
-};
-use tokio::sync::{Mutex, RwLock};
-
-use super::{Access, CachedGuide, Guide, PhantomRead, Play, Visit};
+use super::{Access, Guide, PhantomRead, Play, Visit};
 
 pub struct RequestBuilder(reqwest::RequestBuilder);
 impl RequestBuilder {
@@ -150,9 +148,7 @@ impl Access for Connection {
     }
 
     async fn guide(&self) -> Result<Map> {
-        Ok(Map {
-            conn: self.clone(),
-        })
+        Ok(Map { conn: self.clone() })
     }
 }
 
@@ -238,6 +234,9 @@ impl<'g> PhantomRead for GuestControl<'g> {
 #[async_trait]
 impl<'g> Visit<'g> for GuestControl<'g> {
     async fn walk(&mut self, to: navi::Direction) -> Result<()> {
+        if self.energy < 1{
+            bail!("energy not enough")
+        }
         let resp = self
             .player
             .conn
@@ -344,18 +343,18 @@ pub struct Map {
 
 #[async_trait]
 impl Guide for Map {
-    async fn get_node(&self, id: NodeID) -> Result<Node> {
+    async fn get_node(&self, (x, y): (i16, i16)) -> Result<Node> {
         let resp = self
             .conn
-            .build_get(format!("/node/bytes/{0}/{1}", id.0, id.1))?
+            .build_get(format!("/node/bytes/{x}/{y}"))?
             .send()
             .await?;
-        Ok(Node {
-            id,
-            data: NodeData::from_bytes(resp.bytes().await?),
-        })
+        Ok(Node::new((x, y), resp.bytes().await?))
     }
-    async fn list_nodes(&self, ids: impl Iterator<Item = NodeID> + Sync + Send) -> Result<Vec<Node>> {
+    async fn list_nodes(
+        &self,
+        ids: impl Iterator<Item = (i16, i16)> + Sync + Send,
+    ) -> Result<Vec<Node>> {
         let mut nodes = FuturesUnordered::new();
         ids.for_each(|id| nodes.push(self.get_node(id)));
         let mut result = vec![];
