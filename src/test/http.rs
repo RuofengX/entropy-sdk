@@ -1,8 +1,6 @@
-use std::ops::Deref;
-
 use crate::client::{http, Access, Guide, Play, Visit};
 use anyhow::Result;
-use entropy_base::{entity::Guest, grid::NodeID, heat::carnot_efficiency};
+use entropy_base::heat::carnot_efficiency;
 
 // #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
 #[tokio::test]
@@ -94,10 +92,7 @@ async fn test_player() -> Result<()> {
     let g2 = visiting_guest.arrange(0).await?.clone();
     let mut gs = p.list_guest().await?;
     gs.sort_by(|a, b| a.id.cmp(&b.id));
-    assert_eq!(
-        gs,
-        vec![visiting_guest.clone(), g2]
-    );
+    assert_eq!(gs, vec![visiting_guest.clone(), g2]);
 
     Ok(())
 }
