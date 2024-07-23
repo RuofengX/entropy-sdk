@@ -187,7 +187,7 @@ impl Play for PlayerControl {
         let g = resp.json::<Guest>().await?;
         Ok(g)
     }
-    async fn visit<'g>(&'g self, guest_id: i32) -> Result<GuestControl<'g>> {
+    async fn visit<'g>(&'g self, guest_id: i32) -> Result<GuestControl> {
         let resp = self
             .conn
             .build_get(format!("/guest/{guest_id}"))?
@@ -234,7 +234,7 @@ impl<'g> PhantomRead for GuestControl<'g> {
 #[async_trait]
 impl<'g> Visit<'g> for GuestControl<'g> {
     async fn walk(&mut self, to: navi::Direction) -> Result<()> {
-        if self.energy < 1{
+        if self.energy < 1 {
             bail!("energy not enough")
         }
         let resp = self
@@ -276,7 +276,7 @@ impl<'g> Visit<'g> for GuestControl<'g> {
         Ok(())
     }
 
-    async fn arrange(&mut self, transfer_energy: i64) -> Result<GuestControl> {
+    async fn arrange(&'g mut self, transfer_energy: i64) -> Result<GuestControl<'g>> {
         let resp = self
             .player
             .conn
