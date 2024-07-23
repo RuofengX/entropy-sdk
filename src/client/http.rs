@@ -276,7 +276,7 @@ impl<'g> Visit<'g> for GuestControl<'g> {
         Ok(())
     }
 
-    async fn arrange(&'g mut self, transfer_energy: i64) -> Result<GuestControl<'g>> {
+    async fn arrange(&mut self, transfer_energy: i64) -> Result<GuestControl> {
         let resp = self
             .player
             .conn

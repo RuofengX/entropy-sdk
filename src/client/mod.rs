@@ -61,7 +61,7 @@ pub trait Visit<'g>: Deref<Target = Guest> + PhantomRead {
     async fn detect(&self) -> Result<Vec<GuestInfo>>;
     async fn walk(&mut self, to: navi::Direction) -> Result<()>;
     async fn harvest(&mut self, at: usize) -> Result<()>;
-    async fn arrange(&'g mut self, transfer_energy: i64) -> Result<impl Visit<'g>>;
+    async fn arrange(&mut self, transfer_energy: i64) -> Result<impl Visit>;
     async fn heat(&mut self, at: usize, energy: i64) -> Result<()>;
 }
 
