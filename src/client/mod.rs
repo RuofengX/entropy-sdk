@@ -18,7 +18,10 @@ pub trait PhantomRead {
 
 /// 基本的连接对象
 #[async_trait]
-pub trait Access: Sized {
+pub trait Access<'c>: Clone + Sized {
+    /// 对应的Player类型
+    type PlayerType: Play<'c>;
+
     /// 从url字符串构建
     fn from_url(server: String) -> Result<Self>;
 
@@ -50,18 +53,19 @@ pub trait Access: Sized {
 }
 
 #[async_trait]
-pub trait Play: Deref<Target = Player> {
+pub trait Play<'p>: Deref<Target = Player> + Clone {
+    type GuestType: Visit<'p>;
     async fn list_guest(&self) -> Result<Vec<Guest>>;
     async fn spawn_guest(&self) -> Result<Guest>;
-    async fn visit<'g>(&'g self, guest_id: i32) -> Result<impl Visit<'g>>;
+    async fn visit(&self, guest_id: i32) -> Result<Self::GuestType>;
 }
 
 #[async_trait]
-pub trait Visit<'g>: Deref<Target = Guest> + PhantomRead {
+pub trait Visit<'g>: Deref<Target = Guest> + PhantomRead + Clone + Sized {
     async fn detect(&self) -> Result<Vec<GuestInfo>>;
     async fn walk(&mut self, to: navi::Direction) -> Result<()>;
     async fn harvest(&mut self, at: usize) -> Result<()>;
-    async fn arrange(&mut self, transfer_energy: i64) -> Result<impl Visit>;
+    async fn arrange(&mut self, transfer_energy: i64) -> Result<Self>;
     async fn heat(&mut self, at: usize, energy: i64) -> Result<()>;
 }
 

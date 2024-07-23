@@ -89,10 +89,10 @@ async fn test_player() -> Result<()> {
     assert!(visiting_guest.walk((0, 0)).await.is_err());
 
     // arrange
-    let g2 = visiting_guest.arrange(0).await?.clone();
+    let g2 = visiting_guest.arrange(0).await?;
     let mut gs = p.list_guest().await?;
     gs.sort_by(|a, b| a.id.cmp(&b.id));
-    assert_eq!(gs, vec![visiting_guest.clone(), g2]);
+    assert_eq!(gs, vec![*visiting_guest, *g2]);
 
     Ok(())
 }

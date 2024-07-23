@@ -72,7 +72,9 @@ impl Connection {
 }
 
 #[async_trait]
-impl Access for Connection {
+impl<'c> Access<'c> for Connection {
+    type PlayerType = PlayerControl;
+
     fn from_url(server: String) -> Result<Self> {
         Ok(Connection::new(server))
     }
@@ -152,6 +154,7 @@ impl Access for Connection {
     }
 }
 
+#[derive(Clone)]
 pub struct PlayerControl {
     conn: Connection,
     player: Player,
@@ -166,7 +169,9 @@ impl Deref for PlayerControl {
 }
 
 #[async_trait]
-impl Play for PlayerControl {
+impl<'p> Play<'p> for PlayerControl {
+    type GuestType = GuestControl;
+
     async fn list_guest(&self) -> Result<Vec<Guest>> {
         let resp = self
             .conn
@@ -187,7 +192,7 @@ impl Play for PlayerControl {
         let g = resp.json::<Guest>().await?;
         Ok(g)
     }
-    async fn visit<'g>(&'g self, guest_id: i32) -> Result<GuestControl> {
+    async fn visit(&self, guest_id: i32) -> Result<GuestControl> {
         let resp = self
             .conn
             .build_get(format!("/guest/{guest_id}"))?
@@ -196,18 +201,19 @@ impl Play for PlayerControl {
             .await?;
         let g = resp.json::<Guest>().await?;
         Ok(GuestControl {
-            player: &self,
+            player: self.clone(),
             guest: g,
         })
     }
 }
 
-pub struct GuestControl<'g> {
-    player: &'g PlayerControl,
+#[derive(Clone)]
+pub struct GuestControl {
+    player: PlayerControl,
     guest: Guest,
 }
 
-impl<'g> Deref for GuestControl<'g> {
+impl Deref for GuestControl {
     type Target = Guest;
 
     fn deref(&self) -> &Self::Target {
@@ -216,7 +222,7 @@ impl<'g> Deref for GuestControl<'g> {
 }
 
 #[async_trait]
-impl<'g> PhantomRead for GuestControl<'g> {
+impl PhantomRead for GuestControl {
     async fn refresh(&mut self) -> Result<()> {
         self.guest = self
             .player
@@ -232,7 +238,7 @@ impl<'g> PhantomRead for GuestControl<'g> {
 }
 
 #[async_trait]
-impl<'g> Visit<'g> for GuestControl<'g> {
+impl<'c> Visit<'c> for GuestControl {
     async fn walk(&mut self, to: navi::Direction) -> Result<()> {
         if self.energy < 1 {
             bail!("energy not enough")
@@ -295,7 +301,7 @@ impl<'g> Visit<'g> for GuestControl<'g> {
         self.refresh().await?;
 
         let mut gc = GuestControl {
-            player: &self.player,
+            player: self.player.clone(),
             guest: new_g,
         };
         gc.refresh().await?;
